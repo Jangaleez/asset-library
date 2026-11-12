@@ -1,0 +1,16 @@
+{
+  "name": "cc0-asset-library",
+  "version": "1.0.0",
+  "description": "Community CC0 3D asset library with automated submission checks",
+  "scripts": {
+    "test": "node test/run-tests.mjs",
+    "catalog": "node scripts/build-catalog.mjs",
+    "preview": "node scripts/build-catalog.mjs --local && npx --yes serve -l 8080 ."
+  },
+  "license": "CC0-1.0",
+  "dependencies": {
+    "gltf-validator": "2.0.0-dev.3.10"
+  },
+  "private": true,
+  "type": "module"
+}

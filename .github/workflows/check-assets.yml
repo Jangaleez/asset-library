@@ -1,0 +1,70 @@
+name: Check asset submission
+
+# Runs on every pull request. Submissions come from forks, so this workflow
+# gets a read-only token and no secrets. The checker code always comes from
+# main (never from the pull request), so a submitter can't edit the checks.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-assets-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # The merge preview of the pull request. HEAD^1 is main as it is now.
+      - name: Check out submission
+        uses: actions/checkout@v5
+        with:
+          path: pr
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Prepare trusted copy of main and list changes
+        run: |
+          git -C pr worktree add --detach ../base HEAD^1
+          git -C pr diff --name-status -z --no-renames HEAD^1 HEAD > changes.txt
+          git -C pr diff --name-status --no-renames HEAD^1 HEAD
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install checker (from main)
+        run: npm ci --prefix base --ignore-scripts --no-audit --no-fund
+
+      - name: Validate files and check for duplicates
+        run: node base/scripts/check-submission.mjs --base base --pr pr --changes changes.txt
+
+      - name: Virus scan (ClamAV)
+        if: always()
+        run: |
+          mkdir -p scan
+          (cd pr && git diff --name-only -z --diff-filter=A HEAD^1 HEAD | xargs -0 -r cp --parents -t ../scan)
+          if [ -z "$(ls -A scan)" ]; then echo "No new files to scan."; exit 0; fi
+          set +e
+          # The image ships with a virus database; freshclam tops it up to the latest.
+          docker run --rm --mount type=bind,source="$PWD/scan",target=/scan,readonly \
+            --entrypoint /bin/sh clamav/clamav:stable -c '
+              freshclam --stdout --quiet || echo "freshclam update failed - using bundled database"
+              exec clamscan --recursive --infected --max-filesize=200M --max-scansize=400M \
+                            --alert-exceeds-max=yes --alert-encrypted=yes /scan' > clamav.txt 2>&1
+          code=$?
+          set -e
+          cat clamav.txt
+          if [ $code -eq 0 ]; then
+            echo "### 🛡️ ClamAV: no threats found" >> "$GITHUB_STEP_SUMMARY"
+          elif [ $code -eq 1 ]; then
+            { echo "### 🚨 ClamAV flagged files — do not merge"; echo '```'; cat clamav.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          else
+            { echo "### ⚠️ ClamAV scan failed to run — re-run this check"; echo '```'; cat clamav.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
