@@ -43,7 +43,7 @@ if (changes.length === 0) err('submission', 'No files changed.');
 const added = [];
 for (const { status, path } of changes) {
   if (!path.startsWith(`${CONFIG.assetsDir}/`)) {
-    err(path, `Submissions may only add files inside \`${CONFIG.assetsDir}/\`. Changes to anything else must come from a maintainer.`);
+    err(path, `Submissions may only add files inside \`${CONFIG.assetsDir}/\`. Changes to anything else must come from a maintainer (maintainers: merge using the ruleset bypass).`);
   } else if (status !== 'A') {
     err(path, status === 'D' ? 'Submissions cannot delete existing files.' : 'Submissions cannot change existing files — only add new ones.');
   } else {
@@ -55,11 +55,33 @@ for (const { status, path } of changes) {
 const SLUG = /^[a-z0-9][a-z0-9-]{1,60}$/;
 const assets = new Map(); // dir -> { category, slug, model, meta, image }
 
+// Wrong-location problems are grouped per folder so the submitter gets one
+// clear explanation instead of one error per file.
+const misplaced = new Map(); // folder -> { hint, files[] }
+const HOW = 'On GitHub, open `assets` → your category folder → **Add file → Upload files**, then drag the **folder itself** (not the files inside it).';
+function misplace(folder, hint, path) {
+  if (!misplaced.has(folder)) misplaced.set(folder, { hint, files: [] });
+  misplaced.get(folder).files.push(path.split('/').pop());
+}
+
 for (const path of added) {
   const parts = path.split('/');
   const name = parts[parts.length - 1];
-  if (parts.length !== 4) {
-    err(path, `Wrong location. Use \`${CONFIG.assetsDir}/<category>/<asset-name>/<file>\`.`);
+  if (parts.length === 2) {
+    misplace(`${CONFIG.assetsDir}/`, `These files were put straight into \`${CONFIG.assetsDir}/\`. Each asset needs a category folder and its own folder, e.g. \`${CONFIG.assetsDir}/props/my-thing/\`. ${HOW}`, path);
+    continue;
+  }
+  if (parts.length === 3 && CONFIG.categories.includes(parts[1])) {
+    misplace(parts.slice(0, 2).join('/'), `These files were uploaded **without their folder**, straight into \`${parts.slice(0, 2).join('/')}/\`. Each asset needs its own folder, e.g. \`${parts.slice(0, 2).join('/')}/my-thing/\`. ${HOW}`, path);
+    continue;
+  }
+  if (parts.length === 3) {
+    misplace(parts.slice(0, 2).join('/'), `The folder \`${parts[1]}\` was put straight into \`${CONFIG.assetsDir}/\` — it needs to go inside a category folder (${CONFIG.categories.join(', ')}), e.g. \`${CONFIG.assetsDir}/props/${parts[1]}/\`.`, path);
+    continue;
+  }
+  if (parts.length > 4) {
+    const outer = parts.slice(0, 3).join('/');
+    misplace(outer, `There's a **folder inside your asset folder** (\`${parts.slice(2, -1).join('/')}\`). This often happens after unzipping. Upload the innermost folder — the one that directly contains your model and \`${CONFIG.metadataFile}\`.`, path);
     continue;
   }
   const [, category, slug] = parts;
@@ -83,6 +105,9 @@ for (const path of added) {
   else if (CONFIG.modelExtensions.includes(ext)) a.models.push(path);
   else if (CONFIG.imageExtensions.includes(ext)) a.images.push(path);
   else err(path, `File type \`${ext || name}\` is not allowed. Allowed: ${[...CONFIG.modelExtensions, ...CONFIG.imageExtensions].join(', ')} and ${CONFIG.metadataFile}.`);
+}
+for (const [folder, { hint, files }] of misplaced) {
+  err(folder, `Wrong location (${files.map((f) => `\`${f}\``).join(', ')}). ${hint}`);
 }
 
 // ---------- 3. Each asset folder ----------
