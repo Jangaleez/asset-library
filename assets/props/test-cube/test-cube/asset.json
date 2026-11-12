@@ -1,0 +1,11 @@
+{
+  "name": "Test Cube",
+  "creator": "Jangaleez",
+  "description": "A simple teal cube used to test the submission checks.",
+  "licence": "CC0-1.0",
+  "model": "test-cube.glb",
+  "tags": [
+    "test",
+    "primitive"
+  ]
+}
