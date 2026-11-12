@@ -45,10 +45,24 @@ Required: `name`, `creator`, `licence` (must be exactly `"CC0-1.0"`), `model` (t
 
 1. On your computer, make a folder named after your asset (e.g. `neon-cat`) and put your model, `asset.json` and thumbnail in it.
 2. On this repository's GitHub page, open `assets/` and then your category folder (e.g. `avatars`).
-3. Click **Add file → Upload files** and **drag the whole folder** onto the page. GitHub keeps the folder structure.
-4. Click **Propose changes**, then **Create pull request**. GitHub makes your own copy (a fork) automatically — that's normal.
+3. Click **Add file → Upload files**.
+4. In File Explorer (or Finder), go to the place where you can **see your `neon-cat` folder** — don't open it — and drag **the folder itself** onto the GitHub page.
+5. **Check the file list GitHub shows before you continue.** Each file should start with your folder name:
+
+   | ✅ Right — folder name shown | ❌ Wrong — files only |
+   |---|---|
+   | `neon-cat/neon-cat.vrm` | `neon-cat.vrm` |
+   | `neon-cat/asset.json` | `asset.json` |
+   | `neon-cat/thumb.png` | `thumb.png` |
+
+   If you see the ❌ version, you dragged the files from *inside* the folder. Remove them (the ✕ next to each file) and drag the folder instead.
+
+   Also watch for a doubled folder like `neon-cat/neon-cat/asset.json` — that happens after unzipping. Drag the *inner* folder.
+6. Choose **Create a new branch for this commit and start a pull request**, click **Propose changes**, then **Create pull request**. GitHub makes your own copy (a fork) automatically — that's normal.
 
 > The website uploader handles files up to 25 MB. For bigger models, use Git or GitHub Desktop.
+>
+> If dragging a folder doesn't work in your browser, try Chrome or Edge, which keep folder structure on upload.
 
 ## What happens next
 

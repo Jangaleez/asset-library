@@ -115,6 +115,10 @@ const cases = [
   ['fake PNG thumbnail', 1, 'not the image type', { 'assets/props/fake-thumb/t.glb': glb({ shift: 11 }), 'assets/props/fake-thumb/asset.json': meta('t.glb', { thumbnail: 'p.png' }), 'assets/props/fake-thumb/p.png': Buffer.from('MZnotapng') }],
   ['touching workflow files', 1, 'may only add files inside', { '.github/workflows/check-assets.yml': 'hacked' }],
   ['adding into an existing asset folder', 1, 'already exists', { 'assets/props/crate/extra.png': PNG }],
+  ['files uploaded without their folder', 1, 'uploaded **without their folder**', { 'assets/props/asset.json': meta('cube.glb'), 'assets/props/cube.glb': glb({ shift: 13 }) }],
+  ['asset folder dropped straight into assets/', 1, 'needs to go inside a category folder', { 'assets/cube/asset.json': meta('cube.glb'), 'assets/cube/cube.glb': glb({ shift: 14 }) }],
+  ['files dropped straight into assets/', 1, 'put straight into `assets/`', { 'assets/cube.glb': glb({ shift: 15 }) }],
+  ['folder nested inside folder (unzip)', 1, 'folder inside your asset folder', { 'assets/props/cube/cube/asset.json': meta('cube.glb'), 'assets/props/cube/cube/cube.glb': glb({ shift: 16 }) }],
   ['unknown category', 1, 'Unknown category', { 'assets/weapons/gun/g.glb': glb({ shift: 12 }), 'assets/weapons/gun/asset.json': meta('g.glb') }],
 ];
 
